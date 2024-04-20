@@ -9,7 +9,7 @@ namespace teramako.IO.Tar
     public class TarEntry : Stream
     {
         [Conditional("DEBUG")]
-        private void Dump(string message)
+        static private void Dump(string message)
         {
             var color = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -206,9 +206,9 @@ namespace teramako.IO.Tar
         /// <exception cref="TarHeaderParsingException"></exception>
         private void Parse()
         {
-            bool isCompleted = false;
             TarEntryType currentType = TarEntryType.Incompleted;
             Dump("Start Parsing");
+            bool isCompleted;
             do
             {
                 switch (currentType)
@@ -252,8 +252,6 @@ namespace teramako.IO.Tar
         }
         private TarEntryType ParseStandardHeader()
         {
-            var type = TarEntryType.Incompleted;
-
             var buffer = ReadHeader();
             if (buffer[0] == 0) // reached end of tar data.
             {
@@ -390,7 +388,7 @@ namespace teramako.IO.Tar
         {
             return Convert.ToInt64(ParseString(buffer, offset, length), 8);
         }
-        private DateTime Epoch2Date(long epoch)
+        static private DateTime Epoch2Date(long epoch)
         {
             var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             return date.AddSeconds(epoch).ToLocalTime();
@@ -401,7 +399,7 @@ namespace teramako.IO.Tar
         /// <param name="typeflag"></param>
         /// <returns></returns>
         /// <see cref="TarEntryType"/>
-        private TarEntryType GetEntryType (byte typeflag)
+        static private TarEntryType GetEntryType (byte typeflag)
         {
             switch (typeflag)
             {

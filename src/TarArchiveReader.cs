@@ -5,13 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO.Compression;
 
 namespace teramako.IO.Tar
 {
     public class TarArchiveReader : IDisposable
     {
         [Conditional("DEBUG")]
-        private void Dump(string message)
+        static private void Dump(string message)
         {
             var color = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Magenta;
@@ -19,7 +20,7 @@ namespace teramako.IO.Tar
             Console.ForegroundColor = color;
         }
         private const int BLOCK_SIZE = 512;
-        private Stream BaseStream = null;
+        private readonly Stream BaseStream = null;
         #region IDispose Implemention
         private bool isDisposed = false;
         public void Dispose()
