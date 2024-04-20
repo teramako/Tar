@@ -1,12 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" / -->
-  <ItemGroup>
-    <Compile Include="src\TarAssemblyInfo.cs" />
-    <Compile Include="src\TarArchiveReader.cs" />
-    <Compile Include="src\TarEntryType.cs" />
-    <Compile Include="src\TarEntry.cs" />
-  </ItemGroup>
   <PropertyGroup>
     <AssemblyName>Tar</AssemblyName>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -35,26 +29,21 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <ItemGroup>
-    <Sample Include="src\sample\Program.cs" />
-    <Sample Include="src\sample\SampleAssemblyInfo.cs" />
-    <SampleRef Include="$(OutputPath)Tar.dll" />
-    <None Include="test.tar.gz" />
-  </ItemGroup>
-  <Target Name="Test" >
-    <Exec Command="$(OutputPath)sample.exe test.tar.gz" />
-  </Target>
-  <Target Name="BuildSample" >
-    <Csc Sources="@(Sample)" TargetType="Exe" OutputAssembly="$(OutputPath)sample.exe" References="@(SampleRef)" />
-  </Target>
-  <Target Name="Build">
-    <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')" />
-    <Message Text="Building $(AssemblyName).dll" Importance="high" />
-    <Message Text="------------------------------------------------------" Importance="normal" />
-    <Csc Sources="@(Compile)" OutputAssembly="$(OutputPath)$(AssemblyName).dll" TargetType="$(OutputType)" Optimize="$(Optimize)" Platform="$(PlatformTarget)" WarningLevel="$(WarningLevel)" DefineConstants="$(DefineConstants)" />
-    <Message Text="Done" Importance="low" />
-  </Target>
   <Target Name="Clean">
     <Delete Files="$(OutputPath)*" />
   </Target>
+  <ItemGroup>
+    <Compile Remove="Debug\**" />
+    <Compile Remove="test\**" />
+    <EmbeddedResource Remove="Debug\**" />
+    <EmbeddedResource Remove="test\**" />
+    <None Remove="Debug\**" />
+    <None Remove="test\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Management.Automation">
+      <HintPath>C:\Program Files\PowerShell\7\System.Management.Automation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
 </Project>
