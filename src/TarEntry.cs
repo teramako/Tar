@@ -24,57 +24,16 @@ namespace teramako.IO.Tar
         /// </summary>
         /// <param name="baseStream"></param>
         /// <param name="mode"></param>
-        public TarEntry(Stream baseStream, TarMode mode = TarMode.Read) :this(baseStream,mode, Encoding.UTF8)
+        public TarEntry(Stream baseStream) :this(baseStream, Encoding.UTF8)
         {
         }
-        public TarEntry(Stream baseStream, TarMode mode, Encoding entryEncoding)
+        public TarEntry(Stream baseStream, Encoding entryEncoding)
         {
             BaseStream = baseStream;
-            Mode = mode;
             EntryNameEncoding = entryEncoding;
-            if (mode == TarMode.Read)
-            {
-                Parse();
-            }
-        }
-        /// <summary>
-        /// Open the <paramref name="path"/> for WriteStream
-        /// </summary>
-        /// <param name="path"></param>
-        /// <exception cref="NotSupportedException"/>
-        public TarEntry(String path)
-        {
-            Mode = TarMode.Create;
-            var file = new FileInfo(path);
-            if (file.Attributes.HasFlag(FileAttributes.Directory))
-            {
-                Type = TarEntryType.Directory;
-                Size = 0;
-            }
-            else if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
-            {
-                Type = TarEntryType.SymbolicLink;
-                Size = 0;
-            }
-            else if (file.Attributes.HasFlag(FileAttributes.Normal))
-            {
-                Type = TarEntryType.Regular;
-                Size = file.Length;
-            }
-            else
-            {
-                throw new NotSupportedException(string.Format("{0}: {1}", path, file.Attributes));
-            }
-            var unixPath = path.Replace('\\', '/');
-            var byteCount = Encoding.UTF8.GetByteCount(unixPath);
-            if (byteCount > 100)
-            {
-                Type |= TarEntryType.GNU_LongName;
-            }
-            Name = unixPath;
+            Parse();
         }
         #endregion
-        public TarMode Mode { get; private set; }
         public int HeaderBlockCount { get; private set; }
         /// <summary>
         /// Encoding of <Name or LinkName
@@ -94,8 +53,12 @@ namespace teramako.IO.Tar
             }
             isDisposed = true;
         }
-        public override bool CanWrite { get { return Mode != TarMode.Read;  } }
-        public override bool CanRead { get { return Mode == TarMode.Read;  } }
+        public override bool CanWrite { get { return false; } }
+        public override bool CanRead {
+            get {
+                return BaseStream != null && BaseStream.CanRead;
+            }
+        }
         public override bool CanSeek { get { return false; } }
         public override long Position {
             get { return position; }
@@ -111,11 +74,7 @@ namespace teramako.IO.Tar
         }
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (Mode == TarMode.Read)
-            {
-                throw new NotSupportedException();
-            }
-            BaseStream.Write(buffer, offset, count);
+            throw new NotSupportedException();
         }
         public override void Flush()
         {
@@ -130,10 +89,6 @@ namespace teramako.IO.Tar
         }
         public override int ReadByte()
         {
-            if (Mode == TarMode.Create)
-            {
-                throw new NotSupportedException();
-            }
             var buf = new byte[1];
             var result = Read(buf, 0, 1);
             if (result <= 0)
@@ -144,10 +99,6 @@ namespace teramako.IO.Tar
         }
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (Mode == TarMode.Create)
-            {
-                throw new NotSupportedException();
-            }
             if (position >= Length)
             {
                 return 0;

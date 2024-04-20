@@ -21,7 +21,7 @@ namespace Sample
 			{
 				using (var fs = File.OpenRead(args[0]))
 				using (var gs = new GZipStream(fs, CompressionMode.Decompress))
-				using (var tar = new TarArchive(gs))
+				using (var tar = new TarArchiveReader(gs))
 				{
 					foreach (var tarEntry in tar.GetEntries())
 					{

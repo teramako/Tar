@@ -8,19 +8,14 @@ using System.Diagnostics;
 
 namespace teramako.IO.Tar
 {
-    public enum TarMode
-    {
-        Read = 0,
-        Create = 1,
-    }
-    public class TarArchive : IDisposable
+    public class TarArchiveReader : IDisposable
     {
         [Conditional("DEBUG")]
         private void Dump(string message)
         {
             var color = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("TarArchive::" + message);
+            Console.WriteLine("TarArchiveReader::" + message);
             Console.ForegroundColor = color;
         }
         private const int BLOCK_SIZE = 512;
@@ -49,7 +44,7 @@ namespace teramako.IO.Tar
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="mode"></param>
-        public TarArchive(Stream stream, TarMode mode = TarMode.Read) : this(stream, mode, Encoding.UTF8)
+        public TarArchiveReader(Stream stream) : this(stream, Encoding.UTF8)
         {
         }
         /// <summary>
@@ -58,14 +53,12 @@ namespace teramako.IO.Tar
         /// <param name="stream"></param>
         /// <param name="mode"></param>
         /// <param name="entryNameEncoding">Tarエントリのファイル名やリンク名の文字エンコーディング</param>
-        public TarArchive(Stream stream, TarMode mode, Encoding entryNameEncoding)
+        public TarArchiveReader(Stream stream, Encoding entryNameEncoding)
         {
             BaseStream = stream;
-            Mode = mode;
             EntryNameEncoding = entryNameEncoding;
         }
         #endregion
-        public TarMode Mode { get; private set; }
         public Encoding EntryNameEncoding { get; set; }
         /// <summary>
         /// Enumerable tar entries.
@@ -77,7 +70,7 @@ namespace teramako.IO.Tar
             long position = 0;
             while (BaseStream.CanRead)
             {
-                var entry = new TarEntry(BaseStream, TarMode.Read, EntryNameEncoding);
+                var entry = new TarEntry(BaseStream, EntryNameEncoding);
                 if (entry.Type == TarEntryType.EndOfEntry)
                 {
                     Dump("GetEntries Reach EndBlock");

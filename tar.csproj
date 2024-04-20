@@ -3,7 +3,7 @@
   <!-- Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" / -->
   <ItemGroup>
     <Compile Include="src\TarAssemblyInfo.cs" />
-    <Compile Include="src\TarArchive.cs" />
+    <Compile Include="src\TarArchiveReader.cs" />
     <Compile Include="src\TarEntryType.cs" />
     <Compile Include="src\TarEntry.cs" />
   </ItemGroup>
