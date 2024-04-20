@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" / -->
   <ItemGroup>
     <Compile Include="src\TarAssemblyInfo.cs" />
@@ -13,7 +13,7 @@
     <Platform Condition=" '$(Platform)' == '' ">anycpu</Platform>
     <OutputType>Library</OutputType>
     <RootNamespace>teramako.IO.Tar</RootNamespace>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFramework>net8.0</TargetFramework>
     <TargetFrameworkProfile />
     <ProjectGuid>{A00DA35A-A0D6-4B04-BF7D-FA5CCE76DF71}</ProjectGuid>
   </PropertyGroup>
