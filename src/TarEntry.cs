@@ -29,15 +29,13 @@ namespace teramako.IO.Tar
         }
         public TarEntry(Stream baseStream, Encoding entryEncoding)
         {
+            Header = new TarHeader();
             BaseStream = baseStream;
             EntryNameEncoding = entryEncoding;
             Parse();
         }
         #endregion
         public int HeaderBlockCount { get; private set; }
-        /// <summary>
-        /// Encoding of <Name or LinkName
-        /// </summary>
         public Encoding EntryNameEncoding { get; set; }
         #region Stream Implemention
         private Stream BaseStream = null;
@@ -84,7 +82,7 @@ namespace teramako.IO.Tar
         {
             get
             {
-                return Size;
+                return Header.Size;
             }
         }
         public override int ReadByte()
@@ -130,47 +128,7 @@ namespace teramako.IO.Tar
         private const int DEVMAJOR_LENGTH = 8;
         private const int DEVMINOR_LENGTH = 8;
         private const int PREFIX_LENGTH = 155;
-        /// <summary>
-        /// File name
-        /// </summary>
-        public string Name { get; internal set; }
-        /// <summary>
-        /// UNIX/Linux permission
-        /// </summary>
-        public int Permission { get; private set; }
-        /// <summary>
-        /// User ID
-        /// </summary>
-        public int Uid { get; private set; }
-        /// <summary>
-        ///  Group ID
-        /// </summary>
-        public int Gid { get; private set; }
-        /// <summary>
-        /// File size (byte)
-        /// </summary>
-        public long Size { get; private set; }
-        /// <summary>
-        /// Last modified time
-        /// </summary>
-        public DateTime Mtime { get; private set; }
-        public int Checksum { get; private set; }
-        //        public byte Typeflag { get; private set; }
-        public string LinkName { get; private set; }
-        public string Magic { get; private set; }
-        public string Version { get; private set; }
-        /// <summary>
-        /// User name
-        /// </summary>
-        public string Uname { get; private set; }
-        /// <summary>
-        /// Group name
-        /// </summary>
-        public string Gname { get; private set; }
-        /// <summary>
-        /// Entry type
-        /// </summary>
-        public TarEntryType Type { get; private set; }
+        public TarHeader Header { get; private set; }
         #endregion
 
         private const int BLOCK_SIZE = 512;
@@ -215,12 +173,12 @@ namespace teramako.IO.Tar
                 {
                     case TarEntryType.GNU_LongName:
                         Dump("Parsing GNU_LongName");
-                        Name = ParseString(ReadHeader((int)Size), 0, (int)Size);
+                        Header.Name = ParseString(ReadHeader((int)Header.Size), 0, (int)Header.Size);
                         currentType = TarEntryType.Incompleted;
                         break;
                     case TarEntryType.GNU_LongLink:
                         Dump("Parsing GNU_LongLink");
-                        LinkName = ParseString(ReadHeader((int)Size), 0, (int)Size);
+                        Header.LinkName = ParseString(ReadHeader((int)Header.Size), 0, (int)Header.Size);
                         currentType = TarEntryType.Incompleted;
                         break;
                     case TarEntryType.Incompleted:
@@ -237,10 +195,9 @@ namespace teramako.IO.Tar
                         break;
                     case TarEntryType.Unkown:
                         throw new TarHeaderParsingException(
-                            string.Format("Unkown tar header type: {0}", Type));
+                            string.Format("Unkown tar header type: {0}", Header.Type));
                     case TarEntryType.EndOfEntry:
-                        Type = currentType;
-                        isCompleted = true;
+                        Header.Type = currentType;
                         return;
                     default:
                         isCompleted = true;
@@ -259,38 +216,37 @@ namespace teramako.IO.Tar
                 return TarEntryType.EndOfEntry;
             }
             var offset = 0;
-            if (!Type.HasFlag(TarEntryType.GNU_LongName))
+            if (!Header.Type.HasFlag(TarEntryType.GNU_LongName))
             {
-                Name = ParseString(buffer, offset, NAME_LENGTH);
+                Header.Name = ParseString(buffer, offset, NAME_LENGTH);
             }
             offset += NAME_LENGTH;
-            Permission = (int)ParseOctet(buffer, offset, MODE_LENGTH);
+            Header.Permission = new Permission((int)ParseOctet(buffer, offset, MODE_LENGTH));
             offset += MODE_LENGTH;
-            Uid = (int)ParseOctet(buffer, offset, UID_LENGTH);
+            Header.Uid = (int)ParseOctet(buffer, offset, UID_LENGTH);
             offset += UID_LENGTH;
-            Gid = (int)ParseOctet(buffer, offset, GID_LENGTH);
+            Header.Gid = (int)ParseOctet(buffer, offset, GID_LENGTH);
             offset += GID_LENGTH;
-            Size = ParseOctet(buffer, offset, SIZE_LENGTH);
+            Header.Size = ParseOctet(buffer, offset, SIZE_LENGTH);
             offset += SIZE_LENGTH;
-            Mtime = Epoch2Date(ParseOctet(buffer, offset, MTIME_ELNGTH));
+            Header.Mtime = Epoch2Date(ParseOctet(buffer, offset, MTIME_ELNGTH));
             offset += MTIME_ELNGTH;
-            Checksum = (int)ParseOctet(buffer, offset, CHECKSUM_LENGTH);
+            Header.Checksum = (int)ParseOctet(buffer, offset, CHECKSUM_LENGTH);
             offset += CHECKSUM_LENGTH;
-            type = GetEntryType(buffer[offset++]);
-            Type |= type;
-            if (!Type.HasFlag(TarEntryType.GNU_LongLink))
+            TarEntryType type = GetEntryType(buffer[offset++]);
+            Header.Type |= type;
+            if (!Header.Type.HasFlag(TarEntryType.GNU_LongLink))
             {
-                LinkName = ParseString(buffer, offset, LINKNAME_LENGTH);
+                Header.LinkName = ParseString(buffer, offset, LINKNAME_LENGTH);
             }
             offset += LINKNAME_LENGTH;
-            Magic = ParseString(buffer, offset, MAGIC_LENGTH).Trim();
+            Header.Magic = ParseString(buffer, offset, MAGIC_LENGTH);
             offset += MAGIC_LENGTH;
-            Version = ParseString(buffer, offset, VERSION_LENGTH);
+            Header.Version = ParseString(buffer, offset, VERSION_LENGTH);
             offset += VERSION_LENGTH;
-            Uname = ParseString(buffer, offset, UNAME_LENGTH);
+            Header.Uname = ParseString(buffer, offset, UNAME_LENGTH);
             offset += UNAME_LENGTH;
-            Gname = ParseString(buffer, offset, GNAME_LENGTH);
-            offset += GNAME_LENGTH;
+            Header.Gname = ParseString(buffer, offset, GNAME_LENGTH);
 
             return type;
         }
@@ -301,63 +257,21 @@ namespace teramako.IO.Tar
         public override string ToString()
         {
             var sb = new StringBuilder();
-            switch (Type)
+            switch (Header.Type)
             {
-                case TarEntryType.Directory: sb.Append("d"); break;
-                case TarEntryType.SymbolicLink: sb.Append("l"); break;
-                case TarEntryType.Character: sb.Append("c"); break;
-                case TarEntryType.Block: sb.Append("b"); break;
+                case TarEntryType.Directory: sb.Append('d'); break;
+                case TarEntryType.SymbolicLink: sb.Append('l'); break;
+                case TarEntryType.Character: sb.Append('c'); break;
+                case TarEntryType.Block: sb.Append('b'); break;
                 default:
-                    sb.Append("-"); break;
+                    sb.Append('-'); break;
             }
-            sb.Append(PermissionToString());
-            sb.Append(" ");
-            sb.Append(string.Format("{0}:{1}", Uname, Gname));
-            sb.Append(" ");
-            sb.Append(string.Format("{0,10:D} {1} {2}", Size, Mtime.ToString(), Name));
-            if (Type.HasFlag(TarEntryType.SymbolicLink))
+            sb.Append(Header.Permission.ToString());
+            sb.Append(string.Format(" {0}:{1}", Header.Uname, Header.Gname));
+            sb.Append(string.Format(" {0,10:D} {1} {2}", Header.Size, Header.Mtime.ToString(), Header.Name));
+            if (Header.Type.HasFlag(TarEntryType.SymbolicLink))
             {
-                sb.Append(string.Format(" -> {0}", LinkName));
-            }
-            return sb.ToString();
-        }
-        /// <summary>
-        /// Unix like permission string
-        /// </summary>
-        /// <returns></returns>
-        private string PermissionToString()
-        {
-            var sb = new StringBuilder();
-            var m = Permission;
-            sb.Append(((m & 1<<8) != 0) ? 'r' : '-');
-            sb.Append(((m & 1<<7) != 0) ? 'w' : '-');
-            if ((m & 1<<15) == 0) // setUID
-            {
-                sb.Append(((m & 1<<6) != 0) ? 'x' : '-');
-            }
-            else
-            {
-                sb.Append(((m & 1<<6) != 0) ? 's' : 'S');
-            }
-            sb.Append(((m & 1<<5) != 0) ? 'r' : '-');
-            sb.Append(((m & 1<<4) != 0) ? 'w' : '-');
-            if ((m & 1<<12) == 0) // setGID
-            {
-                sb.Append(((m & 1<<3) != 0) ? 'x' : '-');
-            }
-            else
-            {
-                sb.Append(((m & 1<<3) != 0) ? 's' : 'S');
-            }
-            sb.Append(((m & 1<<2) != 0) ? 'r' : '-');
-            sb.Append(((m & 1<<1) != 0) ? 'w' : '-');
-            if ((m & 1<<9) == 0) // sticky bit
-            {
-                sb.Append(((m & 1<<0) != 0) ? 'x' : '-');
-            }
-            else
-            {
-                sb.Append(((m & 1<<0) != 0) ? 't' : 'T');
+                sb.Append(string.Format(" -> {0}", Header.LinkName));
             }
             return sb.ToString();
         }

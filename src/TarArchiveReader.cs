@@ -59,6 +59,28 @@ namespace teramako.IO.Tar
             BaseStream = stream;
             EntryNameEncoding = entryNameEncoding;
         }
+        public TarArchiveReader(string Path) : this(new FileInfo(Path))
+        {
+        }
+        public TarArchiveReader(FileInfo file)
+        {
+            if (!file.Exists)
+            {
+                throw new FileNotFoundException("Not Found", file.FullName);
+            }
+            var fileStream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (file.Extension == ".gz")
+            {
+                var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress, true);
+                BaseStream = gzipStream;
+            }
+            else
+            {
+                BaseStream = fileStream;
+            }
+            EntryNameEncoding = Encoding.UTF8;
+
+        }
         #endregion
         public Encoding EntryNameEncoding { get; set; }
         /// <summary>
@@ -72,7 +94,7 @@ namespace teramako.IO.Tar
             while (BaseStream.CanRead)
             {
                 var entry = new TarEntry(BaseStream, EntryNameEncoding);
-                if (entry.Type == TarEntryType.EndOfEntry)
+                if (entry.Header.Type == TarEntryType.EndOfEntry)
                 {
                     Dump("GetEntries Reach EndBlock");
                     break;
@@ -84,6 +106,7 @@ namespace teramako.IO.Tar
                 entry.Dispose();
             }
             Dump("End GetEntries");
+            BaseStream.Close();
         }
         /// <summary>
         /// Seek to the end of the current tar entry.
