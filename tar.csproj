@@ -6,7 +6,6 @@
     <Compile Include="src\TarArchive.cs" />
     <Compile Include="src\TarEntryType.cs" />
     <Compile Include="src\TarEntry.cs" />
-    <Compile Include="src\TarMode.cs" />
   </ItemGroup>
   <PropertyGroup>
     <AssemblyName>Tar</AssemblyName>

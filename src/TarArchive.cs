@@ -8,6 +8,11 @@ using System.Diagnostics;
 
 namespace teramako.IO.Tar
 {
+    public enum TarMode
+    {
+        Read = 0,
+        Create = 1,
+    }
     public class TarArchive : IDisposable
     {
         [Conditional("DEBUG")]
