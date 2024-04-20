@@ -426,7 +426,7 @@ namespace teramako.IO.Tar
             {
                 if (buffer[offset + count] == 0x00) break;
             }
-            return EntryNameEncoding.GetString(buffer, offset, count);
+            return EntryNameEncoding.GetString(buffer, offset, count).Trim();
         }
         /// <summary>
         /// byteデータを8進数の文字列として数値化
