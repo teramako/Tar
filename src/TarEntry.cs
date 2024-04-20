@@ -441,8 +441,8 @@ namespace teramako.IO.Tar
         }
         private DateTime Epoch2Date(long epoch)
         {
-            var date = new DateTime(1970, 1, 1, 0, 0, 0);
-            return date.AddSeconds(epoch);
+            var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return date.AddSeconds(epoch).ToLocalTime();
         }
         /// <summary>
         /// 1byte(<paramref name="typeflag"/>)からTypeを得る
