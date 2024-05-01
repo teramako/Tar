@@ -101,14 +101,24 @@ namespace teramako.IO.Tar
             {
                 return 0;
             }
-            long readCount = count;
-            if (readCount + position > Length)
+            int totalReadSize = 0;
+            int remainingSize = count;
+            if (remainingSize + position > Length)
             {
-                readCount = Length - position;
+                remainingSize = (int)(Length - position);
             }
-            position += readCount;
+            /// BaseStream が GZipStream 等の場合、要求したサイズ(<param name="count"></param>)が読まれるとは限らない
+            /// 要求サイズに達するまで Read を繰り返す
+            do
+            {
+                var readSize = BaseStream.Read(buffer, offset + totalReadSize, remainingSize);
+                if (readSize == 0) { break; }
+                totalReadSize += readSize;
+                position += readSize;
+                remainingSize -= readSize;
+            } while (remainingSize > 0);
             Dump(string.Format("Read(byte[{0}], {1}, {2}) Pos={3}", buffer.Length, offset, count, position));
-            return BaseStream.Read(buffer, offset, (int)readCount);
+            return totalReadSize;
         }
 
         #endregion
@@ -146,12 +156,15 @@ namespace teramako.IO.Tar
             }
             var bufferSize = count * BLOCK_SIZE;
             var buffer = new byte[bufferSize];
-            var readSize = BaseStream.Read(buffer, 0, bufferSize);
-            if (readSize != bufferSize)
+            var remainingSize = bufferSize;
+            var totalReadSize = 0;
+            do
             {
-                    throw new TarHeaderParsingException(
-                        string.Format("Read data[{0}byte] is too short. Required {1}byte", readSize, bufferSize));
-            }
+                var readSize = BaseStream.Read(buffer, totalReadSize, remainingSize);
+                totalReadSize += readSize;
+                remainingSize -= readSize;
+
+            } while (remainingSize > 0);
             HeaderBlockCount += count;
             Dump(string.Format("ReadHeader: Read {0} block(s)", count));
             return buffer;
